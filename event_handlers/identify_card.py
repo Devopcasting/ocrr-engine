@@ -1,12 +1,18 @@
 import pytesseract
 import time
 import os
+import shutil
 from watchdog.events import FileSystemEventHandler
 from helpers.process_text import CleanText
 from helpers.identify_pan_card import IdentifyPanCard
+from ocrr_logging.ocrr_engine_log import OCRREngineLogging
 
 class IdentifyCard(FileSystemEventHandler):
     def on_created(self, event):
+        # Configure logger
+        config = OCRREngineLogging()
+        logger = config.configure_logger()
+
         # Get image path
         image_path = event.src_path
 
@@ -14,10 +20,10 @@ class IdentifyCard(FileSystemEventHandler):
         image_file_name = os.path.basename(image_path)
 
         # Pan card Pattern1 path
-        pan_card_p1_path = os.path.join(r'C:\Users\pokhriyal\Desktop\OCRR-Engine\images\pan_card\pattern1', image_file_name)
+        pan_card_p1_path = r'C:\Users\pokhriyal\Desktop\OCRR-Engine\images\pan_card\pattern1'
 
         # Pan card Pattern2 path
-        pan_card_p2_path = os.path.join(r'C:\Users\pokhriyal\Desktop\OCRR-Engine\images\pan_card\pattern2', image_file_name)
+        pan_card_p2_path = r'C:\Users\pokhriyal\Desktop\OCRR-Engine\images\pan_card\pattern2'
 
         # Wait for 1 second before reading the file
         time.sleep(1)
@@ -33,6 +39,8 @@ class IdentifyCard(FileSystemEventHandler):
         pan_card = IdentifyPanCard(clean_text)
         if pan_card.check_pan_card():
             if pan_card.identify_pan_card_pattern_1():
-                os.rename(image_path, pan_card_p1_path)
+                logger.info(f"Move image to Pan card Pattern-1 folder")
+                shutil.move(image_path, os.path.join(pan_card_p1_path, image_file_name))
             else:
-                os.rename(image_path, pan_card_p2_path)
+                logger.info(f"Move image to Pan card Pattern-2 folder")
+                shutil.move(image_path, os.path.join(pan_card_p2_path, image_file_name))
